@@ -1,20 +1,14 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 set -e
 
-echo "🚀 Initializing Playwright + Pytest Framework..."
+echo "Initializing Playwright + Pytest Framework..."
 
-echo "🐍 Creating virtual environment..."
+echo "Creating virtual environment..."
 python -m venv venv
 
 # Detect OS paths
 if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "📦 Installing system dependencies for Playwright..."
-
-    sudo apt update -y && sudo apt install -y python3-venv
-    sudo apt install -y nodejs npm
-    sudo npm install -g playwright
-
     VENV_PYTHON="venv/bin/python"
     VENV_PIP="venv/bin/pip"
     VENV_PLAYWRIGHT="venv/bin/playwright"
@@ -24,17 +18,17 @@ else
     VENV_PLAYWRIGHT="venv/Scripts/playwright"
 fi
 
-echo "⬆️ Upgrading pip..."
+echo "Upgrading pip..."
 $VENV_PYTHON -m pip install --upgrade pip
 
-echo "📦 Installing required packages..."
+echo "Installing required packages..."
 $VENV_PIP install pytest playwright pytest-playwright python-dotenv pytest-xdist allure-pytest
 
-echo "🌍 Installing Playwright browsers..."
+echo "Installing Playwright browsers..."
 $VENV_PLAYWRIGHT install
 
-echo "📂 Creating project structure..."
-mkdir tests pages config utils reports
+echo "Creating project structure..."
+mkdir -p tests pages config utils reports artifacts logs data
 
 # ---------------- REQUIREMENTS ----------------
 cat <<EOL > requirements.txt
@@ -48,9 +42,12 @@ EOL
 
 # ---------------- ENV ----------------
 cat <<EOL > .env
-BASE_URL=http://lct-a4g-qa.accoladeelectronics.com/login
+BASE_URL=https://example.com
 BROWSER=chromium
 HEADLESS=false
+SCREENSHOT_ON_FAILURE=true
+LOG_LEVEL=INFO
+VIDEO_RECORDING=false
 EOL
 
 # ---------------- CONFIG ----------------
@@ -60,9 +57,32 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_URL = os.getenv("BASE_URL", "http://lct-a4g-qa.accoladeelectronics.com/login")
+BASE_URL = os.getenv("BASE_URL", "https://example.com")
 BROWSER = os.getenv("BROWSER", "chromium")
 HEADLESS = os.getenv("HEADLESS", "false").lower() == "true"
+SCREENSHOT_ON_FAILURE = os.getenv("SCREENSHOT_ON_FAILURE", "true").lower() == "true"
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+VIDEO_RECORDING = os.getenv("VIDEO_RECORDING", "false").lower() == "true"
+EOL
+
+# ---------------- GLOBAL VARS ----------------
+cat <<'EOL' > config/global_var.py
+import os
+import platform
+
+if platform.system() == "Windows":
+    path_divider = "\\"
+else:
+    path_divider = "/"
+
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+CONFIG_PATH = os.path.join(ROOT_DIR, "config")
+DATA_FILES_PATH = os.path.join(ROOT_DIR, "data")
+ALLURE_RESULTS_PATH = os.path.join(ROOT_DIR, f"reports{path_divider}allureReport")
+SCREENSHOT_PATH = os.path.join(ROOT_DIR, f"artifacts{path_divider}screenshots")
+REPORT_PATH = os.path.join(ROOT_DIR, "reports")
+LOGS_PATH = os.path.join(ROOT_DIR, f"logs{path_divider}testLogs")
+VIDEO_DIR = os.path.join(ROOT_DIR, f"artifacts{path_divider}videos")
 EOL
 
 # ---------------- BASE PAGE ----------------
@@ -71,17 +91,17 @@ class BasePage:
     def __init__(self, page):
         self.page = page
 
-    def navigate(self, url):
-        self.page.goto(url)
+    def navigate(self, url, wait_until="load", timeout=None):
+        return self.page.goto(url, wait_until=wait_until, timeout=timeout)
 
     def get_title(self):
         return self.page.title()
 
-    def click(self, locator):
-        self.page.click(locator)
+    def click(self, locator, **kwargs):
+        self.page.click(locator, **kwargs)
 
-    def fill(self, locator, text):
-        self.page.fill(locator, text)
+    def fill(self, locator, text, **kwargs):
+        self.page.fill(locator, text, **kwargs)
 EOL
 
 # ---------------- SAMPLE PAGE ----------------
@@ -140,19 +160,19 @@ cat <<'EOL' > tests/test_home.py
 from pages.home_page import HomePage
 from config.config import BASE_URL
 
-def test_google_search(page):
+def test_home_page_loads(page):
     home = HomePage(page)
     home.navigate(BASE_URL)
-    assert "lct-a4g" in home.get_title()
+    assert home.get_title() is not None
 EOL
 
 # ---------------- README ----------------
 cat <<EOL > README.md
-# $PROJECT_NAME || "DEMO"
+# Playwright + Pytest Framework
 
 Playwright + Pytest Automation Framework
 
-## 🚀 Setup
+## Setup
 
 Activate virtual environment:
 
@@ -162,19 +182,22 @@ Mac/Linux:
 Windows (Git Bash):
     source venv/Scripts/activate
 
-## ▶ Run Tests
+## Run Tests
 
 pytest
 
-## 📂 Project Structure
+## Project Structure
 
-tests/      → Test cases  
-pages/      → Page Object Model  
-utils/      → Utility classes  
-config/     → Environment configuration  
-reports/    → Test reports  
+tests/      -> Test cases
+pages/      -> Page Object Model
+utils/      -> Utility classes
+config/     -> Environment configuration
+reports/    -> Test reports
+artifacts/  -> Screenshots, videos, traces
+logs/       -> Log files
+data/       -> Static test data
 
-## ⚙ Configuration
+## Configuration
 
 Modify .env to change:
 - BASE_URL
@@ -187,11 +210,11 @@ pip install -r requirements.txt
 pip install playwright --upgrade
 
 echo ""
-echo "✅ Framework Setup Completed!"
+echo "Framework Setup Completed!"
 echo ""
-echo "👉 Next:"
+echo "Next:"
 echo "   cd PROJECT_NAME"
 echo "   source venv/Scripts/activate"
 echo "   pytest"
 echo ""
-echo "🔥 Your automation framework is fully ready."
+echo "Your automation framework is fully ready."

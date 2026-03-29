@@ -9,4 +9,3 @@ HEADLESS = os.getenv("HEADLESS", "false").lower() == "true"
 SCREENSHOT_ON_FAILURE = os.getenv("SCREENSHOT_ON_FAILURE", "true").lower() == "true"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 VIDEO_RECORDING = os.getenv("VIDEO_RECORDING", "false").lower() == "true"
-VIDEO_DIR = os.getenv("VIDEO_DIR", "./videos")
