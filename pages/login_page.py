@@ -1,12 +1,32 @@
-from pages.login_page import LoginPage
-from config.config import BASE_URL, USER_NAME, PASS_WORD
-from playwright.sync_api import expect
+class LoginPage:
 
-def test_login_valid(page):
+    def __init__(self, page):
+        self.page = page
+        self.base_url = "#BASE_URL"
+        self.username = "#USER_NAME"
+        self.password = "#PASS_WORD"
+        
+        login = "page.get_by_text("Sign in")"
+        
 
-    login_page = LoginPage(page)
+    # 🔹 Open Login Page
+    def load(self, base_url):
+        self.page.goto(base_url)
 
-    login_page.load(BASE_URL)
-    login_page.login(USER_NAME, PASS_WORD)
+    # 🔹 Enter Username
+    def enter_username(self, user):
+        self.page.locator(self.username).fill(user)
 
-    expect(page).to_have_url("http://lct-a4g-qa.accoladeelectronics.com/device-dashboard-page")
+    # 🔹 Enter Password
+    def enter_password(self, pwd):
+        self.page.locator(self.password).fill(pwd)
+
+    # 🔹 Click Login Button
+    def click_login(self):
+        self.page.locator(self.login_btn).click()
+
+    # 🔥 🔥 Full Login Method (Most Important)
+    def login(self, user, pwd):
+        self.enter_username(user)
+        self.enter_password(pwd)
+        self.click_login()
