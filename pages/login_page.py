@@ -1,32 +1,23 @@
-class LoginPage:
+import re
+from pages.base_page import BasePage
+from config.config import USERNAME, PASSWORD
+
+class LoginPage(BasePage):
 
     def __init__(self, page):
-        self.page = page
-        self.base_url = "#BASE_URL"
-        self.username = "#USER_NAME"
-        self.password = "#PASS_WORD"
-        
-        login = "page.get_by_text("Sign in")"
-        
+        super().__init__(page)
+
+        # ✅ Enable locators
+        self.username = page.get_by_placeholder("Your Email Address")
+        self.password = page.get_by_placeholder("Password")
+        self.login_btn = page.get_by_role("button", name=re.compile(r"Sign in", re.IGNORECASE))
 
     # 🔹 Open Login Page
-    def load(self, base_url):
-        self.page.goto(base_url)
+    def load(self, url):
+        self.navigate_to(url)   # ✅ FIX
 
-    # 🔹 Enter Username
-    def enter_username(self, user):
-        self.page.locator(self.username).fill(user)
-
-    # 🔹 Enter Password
-    def enter_password(self, pwd):
-        self.page.locator(self.password).fill(pwd)
-
-    # 🔹 Click Login Button
-    def click_login(self):
-        self.page.locator(self.login_btn).click()
-
-    # 🔥 🔥 Full Login Method (Most Important)
-    def login(self, user, pwd):
-        self.enter_username(user)
-        self.enter_password(pwd)
-        self.click_login()
+    # 🔹 Perform Login
+    def login(self, username=USERNAME, password=PASSWORD):
+        self.username.fill(username)
+        self.password.fill(password)
+        self.login_btn.click()
